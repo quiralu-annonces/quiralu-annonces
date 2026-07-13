@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Quiralu — tableau de bord des annonces</title>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; background:#f4f1ea; margin:20px; }
+  h1 { color:#5a4632; margin-bottom:4px; }
+  .maj { color:#999; font-size:13px; margin:0 0 14px; }
+  .onglets { display:flex; gap:8px; margin-bottom:14px; }
+  .onglet { flex:1; max-width:280px; padding:12px 18px; font-size:16px; font-weight:bold;
+            border:none; border-radius:10px 10px 0 0; cursor:pointer;
+            background:#e4ddd2; color:#8a7d6a; border-bottom:3px solid transparent; }
+  .onglet.actif { background:#fff; color:#5a4632; border-bottom:3px solid #2c5f8a; }
+  .date-enchere { font-weight:bold; color:#b03a2e; }
+  .lieu-enchere { font-weight:bold; color:#5a4632; }
+  .barre { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  select { font-size:16px; padding:8px 10px; border-radius:8px; border:1px solid #bbb; background:#fff; }
+  #depart { font-size:14px; padding:8px 10px; border-radius:8px; border:1px solid #bbb; width:290px; }
+  .itineraire { display:block; text-align:center; background:#e8f0e9; color:#2c6e49;
+                text-decoration:none; padding:6px; border-radius:6px; font-size:13px; font-weight:bold; }
+  .itineraire:hover { background:#2c6e49; color:#fff; }
+  .resume { color:#666; margin:8px 0 18px; }
+  .grille { display:flex; flex-direction:column; gap:10px; }
+  .carte { background:#fff; border-radius:10px; padding:10px 14px; box-shadow:0 1px 4px rgba(0,0,0,.15); display:flex; flex-direction:row; align-items:center; gap:14px; }
+  .carte.selectionnee { outline:3px solid #2c6e49; }
+  .carte img { width:84px; height:84px; object-fit:cover; background:#fafafa; border-radius:6px; flex-shrink:0; }
+  .sans-photo { width:84px; height:84px; display:flex; align-items:center; justify-content:center; background:#fafafa; color:#999; border-radius:6px; font-size:11px; text-align:center; flex-shrink:0; }
+  .corps { flex:1; min-width:0; }
+  .carte h2 { font-size:15px; margin:0 0 3px; }
+  .titre-original { color:#aaa; font-size:12px; margin:0 0 3px; font-style:italic; }
+  .infos { color:#777; font-size:13px; margin:3px 0 0; }
+  .prix { font-size:15px; font-weight:bold; color:#2c6e49; }
+  .pays { font-weight:bold; color:#2c5f8a; }
+  .badge { display:inline-block; background:#c0392b; color:#fff; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; margin-right:6px; vertical-align:middle; }
+  .badge-moule { display:inline-block; background:#8e6c1a; color:#fff; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; margin-right:6px; vertical-align:middle; }
+  .etiquette-selection { display:inline-block; background:#2c6e49; color:#fff; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:5px; margin-right:6px; vertical-align:middle; }
+  .cote { display:flex; flex-direction:column; gap:6px; width:220px; flex-shrink:0; }
+  .bouton { display:block; text-align:center; background:#2c5f8a; color:#fff; text-decoration:none; padding:7px; border-radius:6px; font-size:13px; }
+  .actions { display:flex; gap:6px; }
+  .actions button { flex:1; padding:6px 4px; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold; }
+  @media (max-width:700px) {
+    .carte { flex-wrap:wrap; }
+    .cote { width:100%; }
+  }
+  .btn-selection { background:#e4f1e9; color:#2c6e49; }
+  .btn-selection:hover { background:#2c6e49; color:#fff; }
+  .btn-rejet { background:#f7e5e2; color:#b03a2e; }
+  .btn-rejet:hover { background:#b03a2e; color:#fff; }
+  .btn-restaurer { background:#eee; color:#333; }
+  .btn-restaurer:hover { background:#5a4632; color:#fff; }
+  .vide { color:#999; font-size:15px; padding:30px; text-align:center; }
+  .autres-sites { margin-top:34px; background:#fff; border-radius:10px; padding:16px; }
+  .autres-sites h2 { font-size:16px; color:#5a4632; margin-top:0; }
+  .lien-direct { display:inline-block; margin:4px 6px 4px 0; padding:7px 12px; background:#eee; border-radius:6px; color:#2c5f8a; text-decoration:none; font-size:14px; }
+</style>
+</head>
+<body>
+
+<h1>Quiralu — tableau de bord des annonces</h1>
+<p class="maj" id="maj"></p>
+
+<div class="onglets">
+  <button class="onglet actif" id="onglet-vente">🛒 VENTES</button>
+  <button class="onglet" id="onglet-enchere">🔨 ENCHÈRES</button>
+</div>
+
+<div class="barre">
+  <label for="vue">Afficher&nbsp;:</label>
+  <select id="vue">
+    <option value="fichier1">Fichier 1 — FERME + QUIRALU</option>
+    <option value="fichier2">Fichier 2 — FERME + QUIRALU + MOULE</option>
+    <option value="fichier3">Fichier 3 — FERME + QUIRALU + MOULE + ANNÉES 50</option>
+    <option value="selections">★ Mes sélections</option>
+    <option value="corbeille">Corbeille (annonces rejetées)</option>
+    <option value="horssujet">Hors-sujet (contrôle du tri)</option>
+  </select>
+  <label for="depart">🗺️ Mon adresse de départ :</label>
+  <input id="depart" type="text" placeholder="ex. 10 rue des Lilas, 57000 Metz">
+</div>
+
+<p class="resume" id="resume"></p>
+<div class="grille" id="grille"></div>
+
+<div class="autres-sites">
+  <h2>À vérifier soi-même (sites qui refusent la lecture automatique)</h2>
+  <p>Un clic ouvre la recherche « Quiralu » toute prête sur chaque site :</p>
+  <a class="lien-direct" href="https://www.ebay.fr/sch/i.html?_nkw=Quiralu" target="_blank">eBay France</a>
+  <a class="lien-direct" href="https://www.ebay.de/sch/i.html?_nkw=Quiralu" target="_blank">eBay Allemagne</a>
+  <a class="lien-direct" href="https://www.ebay.co.uk/sch/i.html?_nkw=Quiralu" target="_blank">eBay Royaume-Uni</a>
+  <a class="lien-direct" href="https://www.ebay.com/sch/i.html?_nkw=Quiralu" target="_blank">eBay États-Unis</a>
+  <a class="lien-direct" href="https://www.vectis.co.uk/search?q=quiralu" target="_blank">Vectis (enchères jouets, UK)</a>
+  <a class="lien-direct" href="https://www.interencheres.com/recherche/lots?search=quiralu" target="_blank">Interenchères</a>
+  <a class="lien-direct" href="https://www.catawiki.com/fr/s?q=Quiralu" target="_blank">Catawiki</a>
+  <a class="lien-direct" href="https://www.etsy.com/fr/search?q=Quiralu" target="_blank">Etsy</a>
+  <a class="lien-direct" href="https://www.leboncoin.fr/recherche?text=quiralu" target="_blank">Leboncoin</a>
+  <a class="lien-direct" href="https://www.vinted.fr/catalog?search_text=quiralu" target="_blank">Vinted</a>
+</div>
+
+<script src="data/annonces_data.js"></script>
+<script>
+// ---- Les choix Sélectionnée / Rejetée, retenus par le navigateur ----------
+const CLE_MEMOIRE = "quiralu_statuts"; // { lien: "selectionnee" ou "rejetee" }
+
+function chargerStatuts() {
+  try { return JSON.parse(localStorage.getItem(CLE_MEMOIRE)) || {}; }
+  catch (e) { return {}; }
+}
+function enregistrerStatut(lien, statut) {
+  const statuts = chargerStatuts();
+  if (statut === null) { delete statuts[lien]; }
+  else { statuts[lien] = statut; }
+  localStorage.setItem(CLE_MEMOIRE, JSON.stringify(statuts));
+  afficher();
+}
+
+// ---- Quelles annonces appartiennent à quelle vue ? ------------------------
+// L'onglet actif : « vente » (achat direct) ou « enchere » (maisons de ventes)
+let ongletActif = "vente";
+
+// Règle « par régression » : chaque fichier n'affiche QUE les annonces qui
+// possèdent TOUS ses éléments — jamais celles des autres fichiers.
+function appartient(annonce, vue, statut) {
+  if ((annonce.type_vente || "vente") !== ongletActif) return false;
+  if (vue === "corbeille")  return statut === "rejetee";
+  if (statut === "rejetee") return false; // rejetée = invisible partout ailleurs
+  if (vue === "selections") return statut === "selectionnee";
+  const mouleFerme = annonce.categorie === "moule" && annonce.concerne_ferme;
+  if (vue === "horssujet")  return annonce.categorie === "hors-sujet" ||
+                                   (annonce.categorie === "moule" && !annonce.concerne_ferme);
+  if (vue === "fichier1")   return annonce.categorie === "ferme" && !annonce.d_epoque;
+  if (vue === "fichier2")   return mouleFerme && !annonce.d_epoque;
+  if (vue === "fichier3")   return (annonce.categorie === "ferme" || mouleFerme) &&
+                                   annonce.d_epoque;
+  return false;
+}
+
+function echapper(texte) {
+  const d = document.createElement("div");
+  d.textContent = texte || "";
+  return d.innerHTML;
+}
+
+function dateFr(iso) {
+  if (!iso) return "";
+  const [a, m, j] = iso.split("-");
+  return `${j}/${m}/${a}`;
+}
+
+// Le lien « Itinéraire » : ouvre Google Maps avec le lieu de l'annonce (ou de
+// la salle des ventes) en destination, et votre adresse de départ si donnée.
+function lienItineraire(a) {
+  if (!a.lieu || a.lieu === "non précisé") return "";
+  const destination = (a.pays && a.pays !== "non précisé")
+    ? `${a.lieu}, ${a.pays}` : a.lieu;
+  let url = "https://www.google.com/maps/dir/?api=1&destination="
+            + encodeURIComponent(destination);
+  const depart = localStorage.getItem("quiralu_depart") || "";
+  if (depart) url += "&origin=" + encodeURIComponent(depart);
+  return `<a class="itineraire" href="${url}" target="_blank">🗺️ Itinéraire vers ${echapper(a.lieu)}</a>`;
+}
+
+// ---- L'affichage -----------------------------------------------------------
+function afficher() {
+  const vue = document.getElementById("vue").value;
+  const statuts = chargerStatuts();
+  const visibles = ANNONCES.filter(a => appartient(a, vue, statuts[a.lien]));
+
+  const nbNouvelles = visibles.filter(a => a.nouveau).length;
+  const nbRejetees = Object.values(statuts).filter(s => s === "rejetee").length;
+  const nbSelection = Object.values(statuts).filter(s => s === "selectionnee").length;
+  document.getElementById("resume").textContent =
+    `${visibles.length} annonce(s) affichée(s) — dont ${nbNouvelles} nouvelle(s). ` +
+    `Au total : ${nbSelection} sélectionnée(s), ${nbRejetees} rejetée(s).`;
+
+  const grille = document.getElementById("grille");
+  grille.innerHTML = "";
+  if (visibles.length === 0) {
+    grille.innerHTML = '<div class="vide">Aucune annonce dans cette vue pour le moment.</div>';
+    return;
+  }
+
+  for (const a of visibles) {
+    const statut = statuts[a.lien];
+    const carte = document.createElement("div");
+    carte.className = "carte" + (statut === "selectionnee" ? " selectionnee" : "");
+
+    const badgeNouveau = a.nouveau ? '<span class="badge">NOUVEAU</span>' : "";
+    let badgeDroite = "";
+    if (statut === "selectionnee") {
+      badgeDroite = '<span class="etiquette-selection">★ sélectionnée</span>';
+    } else if (a.categorie === "moule") {
+      badgeDroite = `<span class="badge-moule">moule${a.d_epoque ? " d'époque" : ""}</span>`;
+    } else if (a.d_epoque) {
+      badgeDroite = '<span class="badge-moule">d\'époque (dixit vendeur)</span>';
+    }
+    const photo = a.photo
+      ? `<img src="${echapper(a.photo)}" alt="" loading="lazy">`
+      : '<div class="sans-photo">pas de photo</div>';
+    const titreOriginal = (a.titre_fr && a.titre_fr !== a.titre)
+      ? `<p class="titre-original">Titre original : ${echapper(a.titre)}</p>` : "";
+
+    let boutons;
+    if (vue === "corbeille") {
+      boutons = `<button class="btn-restaurer" data-statut="restaurer">↩ Restaurer</button>`;
+    } else {
+      const texteSelection = statut === "selectionnee" ? "★ Retirer de la sélection" : "★ Sélectionner";
+      boutons = `<button class="btn-selection" data-statut="selection">${texteSelection}</button>
+                 <button class="btn-rejet" data-statut="rejet">✕ Rejeter</button>`;
+    }
+
+    let ligneInfos, texteBouton;
+    if ((a.type_vente || "vente") === "enchere") {
+      const misePrix = (a.prix_texte && a.prix_texte !== "non précisé")
+        ? `mise à prix : ${echapper(a.prix_texte)}` : "mise à prix non précisée";
+      ligneInfos = `
+          <span class="date-enchere">🔨 vente le ${echapper(a.date_vente || "non précisé")}</span>
+          &nbsp;·&nbsp; <span class="lieu-enchere">${echapper(a.lieu || "non précisé")}</span>
+          &nbsp;·&nbsp; <span class="pays">📍 ${echapper(a.pays)}</span>
+          &nbsp;·&nbsp; ${misePrix}
+          &nbsp;·&nbsp; ${echapper(a.site)}`;
+      texteBouton = "Voir le lot · se renseigner, enchérir";
+    } else {
+      const ville = (a.lieu && a.lieu !== "non précisé") ? `${echapper(a.lieu)} · ` : "";
+      ligneInfos = `
+          <span class="prix">${echapper(a.prix_texte)}</span>
+          &nbsp;·&nbsp; <span class="pays">📍 ${ville}${echapper(a.pays)}</span>
+          &nbsp;·&nbsp; ${echapper(a.site)}
+          &nbsp;·&nbsp; découverte le ${dateFr(a.decouverte)}`;
+      texteBouton = "Voir l'annonce · contacter le vendeur";
+    }
+
+    carte.innerHTML = `
+      ${photo}
+      <div class="corps">
+        <h2>${badgeNouveau}${badgeDroite}${echapper(a.titre_fr || a.titre)}</h2>
+        ${titreOriginal}
+        <p class="infos">${ligneInfos}</p>
+      </div>
+      <div class="cote">
+        <a class="bouton" href="${echapper(a.lien)}" target="_blank">${texteBouton}</a>
+        ${lienItineraire(a)}
+        <div class="actions">${boutons}</div>
+      </div>`;
+
+    carte.querySelectorAll("button").forEach(bouton => {
+      bouton.addEventListener("click", () => {
+        const action = bouton.dataset.statut;
+        if (action === "rejet")      enregistrerStatut(a.lien, "rejetee");
+        if (action === "restaurer")  enregistrerStatut(a.lien, null);
+        if (action === "selection")  enregistrerStatut(a.lien,
+            statut === "selectionnee" ? null : "selectionnee");
+      });
+    });
+    grille.appendChild(carte);
+  }
+}
+
+function choisirOnglet(type) {
+  ongletActif = type;
+  document.getElementById("onglet-vente").classList.toggle("actif", type === "vente");
+  document.getElementById("onglet-enchere").classList.toggle("actif", type === "enchere");
+  afficher();
+}
+
+document.getElementById("maj").textContent =
+  (typeof GENERE_LE !== "undefined") ? `Dernière mise à jour des annonces : ${GENERE_LE}` : "";
+document.getElementById("vue").addEventListener("change", afficher);
+document.getElementById("onglet-vente").addEventListener("click", () => choisirOnglet("vente"));
+document.getElementById("onglet-enchere").addEventListener("click", () => choisirOnglet("enchere"));
+
+// L'adresse de départ est retenue par le navigateur et réutilisée partout
+const champDepart = document.getElementById("depart");
+champDepart.value = localStorage.getItem("quiralu_depart") || "";
+champDepart.addEventListener("change", () => {
+  localStorage.setItem("quiralu_depart", champDepart.value.trim());
+  afficher();
+});
+
+afficher();
+</script>
+</body>
+</html>
